@@ -43,27 +43,29 @@ function answerForbidden(res) {
 
 function checkIp(ip, path, configs, res, resCallback) {
   var allowed = configs.ip;
+  if (configs != null) {
     if (allowed >= 0) {
-    if (allowed == 0) answerForbidden(res);
-    else {
-      client.execute("SELECT originIp, times from proxy_stats.ip_stats where originIp='"+ip+"';", function (err, result) {
-        handleResult(err, result, function (stat) {
-          if (stat.times < allowed) checkPath(ip, path, configs, res, resCallback);
-          else answerForbidden(res);
+      if (allowed == 0) answerForbidden(res);
+      else {
+        client.execute("SELECT originIp, times from proxy_stats.ip_stats where originIp='" + ip + "';", function (err, result) {
+          handleResult(err, result, function (stat) {
+            if (stat == null || stat.times < allowed) checkPath(ip, path, configs, res, resCallback);
+            else answerForbidden(res);
+          });
         });
-      });
-    }
-  } else checkPath(ip, path, configs, res, resCallback);
+      }
+    } else checkPath(ip, path, configs, res, resCallback);
+  } else resCallback();
 }
 
 function checkPath(ip, path, configs, res, resCallback) {
   var allowed = configs.path;
-    if (allowed >= 0) {
+  if (allowed >= 0) {
     if (allowed == 0) answerForbidden(res);
     else {
       client.execute("SELECT path, times from proxy_stats.path_stats where path='"+path+"';", function (err, result) {
         handleResult(err, result, function (stat) {
-          if (stat.times < allowed) checkIpPath(ip, path, configs, res, resCallback);
+          if (stat == null || stat.times < allowed) checkIpPath(ip, path, configs, res, resCallback);
           else answerForbidden(res);
         });
       });
@@ -78,7 +80,7 @@ function checkIpPath(ip, path, configs, res, resCallback) {
     else {
       client.execute("SELECT originIp, path, times from proxy_stats.ip_path_stats where originIp='"+ip+"' and path='"+path+"';", function (err, result) {
         handleResult(err, result, function (stat) {
-          if (stat.times < allowed) resCallback();
+          if (stat == null || stat.times < allowed) resCallback();
           else answerForbidden(res);
         });
       });
@@ -87,14 +89,13 @@ function checkIpPath(ip, path, configs, res, resCallback) {
 }
 
 function handleResult(err, result, callback) {
-  if (!err && err != null) {
+  if (!err || err == null) {
     if (result != undefined && result.rows.length > 0) {
       var stat= result.rows[0];
       callback(stat);
-    }
+    } else callback(null);
   } else throw err;
 }
-
 
 function persistReq (orIp, path, serviceIp, method, timestamp, responseTime) {
   insertRequest(orIp, path, timestamp, serviceIp, method, responseTime);
@@ -104,18 +105,19 @@ function persistReq (orIp, path, serviceIp, method, timestamp, responseTime) {
 }
 
 function updateIpPath(orIp, path) {
-  client.execute("UPDATE ip_path_stats SET times = times + 1 where originIp='" + orIp + "' and path='" + path + "';", errorHandler);
+  client.execute("UPDATE proxy_stats.ip_path_stats SET times = times + 1 where originIp='" + orIp + "' and path='" + path + "';", errorHandler);
 }
 function updateIp(orIp) {
-  client.execute("UPDATE ip_stats SET times = times + 1 where originIp='" + orIp + "';" , errorHandler);
+  client.execute("UPDATE proxy_stats.ip_stats SET times = times + 1 where originIp='" + orIp + "';" , errorHandler);
 }
 function updatePath(path) {
-  client.execute("UPDATE path_stats SET times = times + 1 where path='" + path + "';" , errorHandler);
+  client.execute("UPDATE proxy_stats.path_stats SET times = times + 1 where path='" + path + "';" , errorHandler);
 }
 
 function insertRequest(orIp, path, timestamp, serviceIp, method, responseTime) {
-  client.execute("INSERT INTO requests ( originIp , path , timestamp , targetIp , method , responseTime ) values (" +
-    orIp + ", " + path + ", " + timestamp + ", " + serviceIp + ", " + method + ", " + responseTime + ") );", errorHandler);
+  var query = "INSERT INTO proxy_stats.requests ( originIp , path , timestamp , targetIp , method , responseTime ) values ('" +
+    orIp + "', '" + path + "', '" + timestamp + "', '" + serviceIp + "', '" + method + "', " + responseTime + ") ;";
+  client.execute(query, errorHandler);
 }
 
-function errorHandler(err) {}
+function errorHandler(err) { console.log('error handler :   '+err);}
