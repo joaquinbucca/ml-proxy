@@ -14,4 +14,4 @@ ADD . /src
 
 EXPOSE 3000
 
-CMD ["gulp"]
+CMD ["nodemon", "/src/app.js"]
