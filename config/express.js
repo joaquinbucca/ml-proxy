@@ -36,7 +36,7 @@ module.exports = function(app, config) {
     require(controller)(app);
   });
 
-  var client = new cassandra.Client({contactPoints: ['127.0.0.1'], keyspace: 'proxy_stats'});
+  var client = new cassandra.Client({contactPoints: ['cassandra'], keyspace: 'proxy_stats'});
   //client.execute("CREATE KEYSPACE proxy_stats WITH REPLICATION = { 'class' : 'NetworkTopologyStrategy', 'datacenter1' : 1 };"
   //  , function (err) {
   //

@@ -8,7 +8,7 @@ var express = require('express'),
 var request = require('request');
 var cassandra = require('cassandra-driver');
 var async = require('async');
-var client = new cassandra.Client({contactPoints: ['127.0.0.1'], keyspace: 'proxy_stats'});
+var client = new cassandra.Client({contactPoints: ['cassandra'], keyspace: 'proxy_stats'});
 
 module.exports = function (app) {
   app.use('/', router);
